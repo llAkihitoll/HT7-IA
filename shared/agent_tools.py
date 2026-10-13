@@ -1,4 +1,9 @@
-"""Herramientas comunes para los tres estilos de orquestación."""
+"""Herramientas comunes para los tres estilos de orquestación.
+
+Las funciones `*_json` contienen la lógica de cada herramienta. Se exponen
+como `function_tool` local (centralizada y descentralizada) y como tools del
+servidor MCP (`mcp_server/server.py`), sin duplicar su implementación.
+"""
 
 import asyncio
 import json
@@ -17,8 +22,7 @@ def encode(value: dict) -> str:
     return json.dumps(value, ensure_ascii=False, allow_nan=False)
 
 
-@function_tool
-async def buscar_faq(pregunta: str) -> str:
+async def buscar_faq_json(pregunta: str) -> str:
     """Recupera evidencia de las FAQs del Lab 4; nunca inventa una respuesta."""
     try:
         results = await asyncio.to_thread(faqs.search_faqs, pregunta)
@@ -29,8 +33,7 @@ async def buscar_faq(pregunta: str) -> str:
                        "resultados": []})
 
 
-@function_tool
-async def calendarizar_cita(fecha_iso: str, nombre_cliente: str, hora: str = "09:00") -> str:
+async def calendarizar_cita_json(fecha_iso: str, nombre_cliente: str, hora: str = "09:00") -> str:
     """Guarda una cita tras reconsultar clima. Marginal queda pendiente de revisión.
 
     Args:
@@ -45,3 +48,7 @@ async def calendarizar_cita(fecha_iso: str, nombre_cliente: str, hora: str = "09
         return encode({"error": str(exc), "registrada": False})
     except (sqlite3.Error, OSError):
         return encode({"error": "No fue posible guardar la cita. Intenta nuevamente.", "registrada": False})
+
+
+buscar_faq = function_tool(buscar_faq_json, name_override="buscar_faq")
+calendarizar_cita = function_tool(calendarizar_cita_json, name_override="calendarizar_cita")
