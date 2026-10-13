@@ -119,5 +119,9 @@ def test_existing_architectures_use_shared_integrations():
     from centralized.booking_agent import booking_agent as cb
     from hierarchical.booking_agent_stub import booking_agent as hb
     from shared.agent_tools import buscar_faq, calendarizar_cita
-    assert cf.tools == hf.tools == [buscar_faq]
-    assert cb.tools == hb.tools == [calendarizar_cita]
+    from shared.mcp_connection import faq_mcp, booking_mcp
+    assert cf.tools == [buscar_faq]
+    assert cb.tools == [calendarizar_cita]
+    # HT7: la jerárquica obtiene esas mismas herramientas del servidor MCP.
+    assert hf.tools == hb.tools == []
+    assert hf.mcp_servers == [faq_mcp] and hb.mcp_servers == [booking_mcp]

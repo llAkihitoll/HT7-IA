@@ -2,21 +2,14 @@
 
 Obtiene y evalúa datos reales mediante el servicio compartido de Open-Meteo.
 No decide reservas ni responde FAQs.
+
+HT7: la herramienta `consultar_clima_salto` vive en el servidor MCP
+(`mcp_server/server.py`), que delega en `shared.weather_service`.
 """
 
-from agents import Agent, function_tool
+from agents import Agent
 
-from shared.weather_service import describe_jump_weather
-
-
-@function_tool
-def consultar_clima_salto(fecha_iso: str) -> str:
-    """Consulta el clima en el sitio de aterrizaje para `fecha_iso`
-    (formato YYYY-MM-DD) y determina si las condiciones permiten realizar
-    el salto (ideal, marginal o prohibido), con motivos y restricciones."""
-
-    return describe_jump_weather(fecha_iso)
-
+from shared.mcp_connection import weather_mcp
 
 weather_agent = Agent(
     name="Agente Clima",
@@ -30,5 +23,5 @@ weather_agent = Agent(
         "el estado, los motivos y las restricciones tal como te los devuelve "
         "la herramienta, sin inventar información adicional."
     ),
-    tools=[consultar_clima_salto],
+    mcp_servers=[weather_mcp],
 )
