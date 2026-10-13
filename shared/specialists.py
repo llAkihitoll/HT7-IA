@@ -1,6 +1,7 @@
 """Especialistas reutilizables por managers; sin handoffs por defecto."""
 
 from agents import Agent
+from agents.mcp import MCPServer
 from shared.agent_tools import buscar_faq, calendarizar_cita
 
 FAQ_INSTRUCTIONS = (
@@ -22,11 +23,19 @@ BOOKING_INSTRUCTIONS = (
 )
 
 
-def make_faq_agent() -> Agent:
+# Con `mcp_server`, la herramienta se obtiene del servidor MCP en lugar de
+# ejecutarse localmente; las instrucciones y el nombre de la tool no cambian.
+def make_faq_agent(mcp_server: MCPServer | None = None) -> Agent:
     return Agent(name="Agente FAQs", handoff_description="Preguntas frecuentes de Parachute S.A.",
-                 instructions=FAQ_INSTRUCTIONS, tools=[buscar_faq])
+                 instructions=FAQ_INSTRUCTIONS, **_tool_source(buscar_faq, mcp_server))
 
 
-def make_booking_agent() -> Agent:
+def make_booking_agent(mcp_server: MCPServer | None = None) -> Agent:
     return Agent(name="Agente Reservas", handoff_description="Registrar citas con validación climática.",
-                 instructions=BOOKING_INSTRUCTIONS, tools=[calendarizar_cita])
+                 instructions=BOOKING_INSTRUCTIONS, **_tool_source(calendarizar_cita, mcp_server))
+
+
+def _tool_source(local_tool, mcp_server: MCPServer | None) -> dict:
+    if mcp_server is None:
+        return {"tools": [local_tool]}
+    return {"tools": [], "mcp_servers": [mcp_server]}
