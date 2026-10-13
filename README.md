@@ -1,37 +1,40 @@
-# HT6 — Evals del agente de Parachute S.A.
+# HT7 — Protocolos agénticos (MCP + A2A) para Parachute S.A.
 
-Este repositorio cierra el ciclo de desarrollo del agente de la Hoja de
-trabajo #5 con **evals en [Promptfoo](https://www.promptfoo.dev/)**. Se evalúa
-la arquitectura **jerárquica**, la elegida por el equipo en la HT5, sobre sus
-dos funcionalidades: preguntas frecuentes y agendamiento de citas. Se usan
-graders de factuality, deterministas (contains/regex), latencia y ejecución
-real de herramientas.
+Se agregan protocolos alrededor del sistema multiagente **jerárquico** de la
+HT5/HT6, sin reimplementarlo. El código base (`hierarchical/`, `centralized/`,
+`decentralized/`, `shared/`, `tests/`) se copió desde `HT6-IA`; no se trajeron
+los evals de Promptfoo (`evals/`, `package.json`).
 
-- **Documentación completa de los evals:** [evals/README.md](evals/README.md)
-  (instalación, ejecución, graders, matriz, resultados, hallazgos y limitaciones).
-- **Reporte de Promptfoo:** [evals/reports/report.html](evals/reports/report.html)
-  y [evals/reports/results.json](evals/reports/results.json).
-- **Resultado de la ejecución final:** 10 de 15 casos pasan. Todas las
-  verificaciones de tool calls y de estado real de la base pasan (21 de 21). Los
-  fallos son citas perdidas (F3, F4), información engañosa ante una pregunta
-  sin respuesta (F6), no avisar de una cita duplicada (R7) y latencia (R2).
+> Estado: **MCP implementado**. El servidor A2A y la terminal como cliente A2A
+> se documentarán aquí cuando estén listos.
 
-Ejecución rápida, desde la raíz y con el venv activo (detalle en
-[evals/README.md](evals/README.md)):
+## Servidor MCP (`mcp_server/server.py`)
+
+Un único servidor MCP, `parachute-tools`, con transporte **Streamable HTTP**
+en `http://127.0.0.1:8001/mcp`. Expone las tres herramientas reales de los
+agentes, delegando en la misma lógica de `shared/`:
+
+| Tool MCP | Lógica reutilizada | Agente que la usa |
+|---|---|---|
+| `buscar_faq(pregunta)` | `shared.agent_tools.buscar_faq_json` → pgvector | Agente FAQs |
+| `consultar_clima_salto(fecha_iso)` | `shared.weather_service.describe_jump_weather` → Open-Meteo + evaluador | Agente Clima |
+| `calendarizar_cita(fecha_iso, nombre_cliente, hora="09:00")` | `shared.agent_tools.calendarizar_cita_json` → `bookings.create_booking` | Agente Reservas |
+
+Los agentes de la arquitectura jerárquica son clientes MCP mediante
+`agents.mcp.MCPServerStreamableHttp` del SDK (`shared/mcp_connection.py`).
+Cada agente tiene su propio cliente filtrado a su herramienta. Las
+arquitecturas centralizada y descentralizada siguen usando las tools locales.
 
 ```bash
-python -m pip install -r requirements.txt && npm install
-POSTGRES_PORT=5434 docker compose up -d --wait
-DATABASE_URL=postgresql://parachute:parachute_local@localhost:5434/parachute_faqs python -m shared.faq_store.load_data
-npm run eval        # requiere NVIDIA_API_KEY en .env
-python -m pytest -q # 103 pruebas, sin API ni red
+python -m mcp_server.server          # terminal 1: servidor MCP + logs
+python -m hierarchical.main          # terminal 2: demo jerárquica (requiere LLM)
+python -m pytest -q                  # incluye tests/test_mcp_server.py
 ```
 
-El código del agente (`hierarchical/`, `centralized/`, `decentralized/`,
-`shared/`) se copió **sin cambios** desde `HT5-IA` (`origin/master`, commit
-`68c5783`). Lo nuevo de la HT6 es `evals/`, `tests/test_eval_assertions.py`,
-`package.json` y `package-lock.json`, más las variables nuevas en
-`.env.example` y `node_modules/` en `.gitignore`.
+`hierarchical.main` usa `NVIDIA_API_KEY` (NVIDIA NIM, `openai/gpt-oss-20b`,
+como en los evals de HT6) o, si no existe, `OPENAI_API_KEY`. Variables
+nuevas: ver `.env.example` (`MCP_HOST`, `MCP_PORT`, `MCP_SERVER_URL`,
+`AGENT_MODEL`). `MCP_WARMUP=0` omite la precarga del modelo de embeddings.
 
 ---
 
