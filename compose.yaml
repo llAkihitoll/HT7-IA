@@ -1,4 +1,4 @@
-name: ht5-ia
+name: ht7-ia
 
 services:
   postgres:
@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-parachute}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-parachute_local}
     ports:
-      - "${POSTGRES_PORT:-5433}:5432"
+      - "${POSTGRES_PORT:-5434}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
