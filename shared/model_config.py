@@ -30,7 +30,7 @@ def build_run_config() -> RunConfig:
                 base_url=os.getenv("NVIDIA_BASE_URL", NVIDIA_BASE_URL),
                 use_responses=False,
             ),
-            model=os.getenv("AGENT_MODEL", NVIDIA_DEFAULT_MODEL),
+            model=os.getenv("AGENT_MODEL", "").strip() or NVIDIA_DEFAULT_MODEL,
             # Sin clave de OpenAI el exportador de trazas solo emitiría avisos.
             tracing_disabled=True,
         )
